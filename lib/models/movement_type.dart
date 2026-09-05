@@ -1,0 +1,4 @@
+enum MovementType {
+  entry,
+  exit,
+}
