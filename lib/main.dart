@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:stock_app/services/auth_service.dart';
+import 'package:stock_app/screens/auth/auth_gate.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,19 +18,27 @@ Future<void> main() async {
   final supabase = Supabase.instance.client;
   final authService = AuthService(supabase);
 
-  runApp(const MainApp());
+  runApp(
+    MainApp(
+      authService: authService,
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+  final AuthService authService;
+
+  const MainApp({
+    super.key,
+    required this.authService,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: AuthGate(
+        authService: authService,
       ),
     );
   }
