@@ -22,4 +22,6 @@ class AuthService {
   User? get currentUser => _supabase.auth.currentUser;
 
   Session? get currentSession => _supabase.auth.currentSession;
+
+  Stream<AuthState> get authStateChanges => _supabase.auth.onAuthStateChange;
 }
