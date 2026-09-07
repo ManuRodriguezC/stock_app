@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:stock_app/core/theme/app_theme.dart';
 import 'package:stock_app/services/auth_service.dart';
 import 'package:stock_app/screens/auth/auth_gate.dart';
 
@@ -37,6 +38,7 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
       home: AuthGate(
         authService: authService,
       ),
