@@ -123,12 +123,14 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     return null;
   }
 
+  // Los mensajes van cortos porque estos dos campos comparten el ancho
+  // de la pantalla y un texto largo se corta.
   String? _validarStock(String? valor) {
     final texto = (valor ?? '').trim();
-    if (texto.isEmpty) return 'Este campo es obligatorio';
+    if (texto.isEmpty) return 'Obligatorio';
 
     final numero = int.tryParse(texto);
-    if (numero == null) return 'Ingresa un número entero';
+    if (numero == null) return 'Debe ser entero';
     if (numero < 0) return 'No puede ser negativo';
     return null;
   }
