@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stock_app/core/theme/app_colors.dart';
 import 'package:stock_app/models/product.dart';
 import 'package:stock_app/screens/products/widgets/product_card.dart';
+import 'package:stock_app/screens/products/product_form_screen.dart';
 import 'package:stock_app/widgets/app_bottom_nav_bar.dart';
 
 class ProductsScreen extends StatefulWidget {
@@ -274,8 +275,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
-          onTap: () {
-            // Acción de crear producto (T10)
+          onTap: () async {
+            // T10 - Abre el formulario y espera el producto que devuelva.
+            final nuevoProducto = await Navigator.push<Product>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProductFormScreen(
+                  // Se envían los códigos ya usados para impedir duplicados.
+                  existingBarcodes: _mockProducts
+                      .map((p) => p.barcode ?? '')
+                      .toList(),
+                ),
+              ),
+            );
+
+            // Si el usuario guardó, se agrega a la lista y se redibuja.
+            if (nuevoProducto != null) {
+              setState(() {
+                _mockProducts.insert(0, nuevoProducto);
+              });
+            }
           },
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
