@@ -1,29 +1,17 @@
 import 'package:flutter/material.dart';
-import 'login_form.dart'; 
-
-void main() {
-  runApp(const LoginScreen());
-}
-
-class LoginScreen extends StatelessWidget {
-  const LoginScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: WelcomePage(), 
-    );
-  }
-}
-
+import 'package:stock_app/services/auth_service.dart';
+import 'login/login_form.dart';
 
 class WelcomePage extends StatelessWidget {
-  const WelcomePage({super.key});
+  final AuthService authService;
+
+  const WelcomePage({
+    super.key,
+    required this.authService
+  });
 
   @override
   Widget build(BuildContext context) {
-   
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 224, 234, 248),
       body: Padding(
@@ -73,7 +61,7 @@ class WelcomePage extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const LoginScreen(),
+                        builder: (context) => LoginScreen(authService: authService),
                       ),
                     );
                   },

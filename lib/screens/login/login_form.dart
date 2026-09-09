@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:stock_app/services/auth_service.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final AuthService authService;
+
+  const LoginScreen({super.key, required this.authService});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -11,13 +15,52 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  Future<void> _singIn() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      await widget.authService.signIn(
+        email: _emailController.text.trim(),
+        password: _passwordController.text
+      );
+      if (!mounted) return;
+
+      Navigator.of(context).pop();
+    } on AuthException catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = e.message;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = "Ocurrió un error al iniciar sesión";
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -33,8 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
         child: CustomScrollView(
           slivers: [
             SliverFillRemaining(
-              hasScrollBody:
-                  false, 
+              hasScrollBody: false,
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20.0,
@@ -43,11 +85,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Form(
                   key: _formKey,
                   child: Column(
-                   
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                     
                       const Column(
                         children: [
                           Text.rich(
@@ -82,8 +122,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-
-                    
                       Column(
                         children: [
                           TextFormField(
@@ -137,18 +175,20 @@ class _LoginScreenState extends State<LoginScreen> {
                             },
                           ),
                           const SizedBox(height: 25),
+                          if (_errorMessage != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Text(
+                                _errorMessage!,
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ),
+                          const SizedBox(height: 25),
                           ElevatedButton(
-                            onPressed: () {
-                              if (_formKey.currentState!.validate()) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Ingresando con: ${_emailController.text}',
-                                    ),
-                                  ),
-                                );
-                              }
-                            },
+                            onPressed: _isLoading ? null : _singIn,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color.fromARGB(
                                 255,
@@ -168,8 +208,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-
-                      
                       const SizedBox(height: 20),
                     ],
                   ),
