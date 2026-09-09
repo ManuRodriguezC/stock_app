@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
           slivers: [
             SliverFillRemaining(
               hasScrollBody:
-                  false, // Permite que la columna se expanda y distribuya
+                  false, 
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20.0,
@@ -43,11 +43,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Form(
                   key: _formKey,
                   child: Column(
-                    // Distribuye las 3 secciones: Header arriba, Formulario al centro, Espacio abajo
+                   
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      // 1. HEADER (Queda posicionado arriba)
+                     
                       const Column(
                         children: [
                           Text.rich(
@@ -83,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
 
-                      // 2. FORMULARIO (Queda centrado verticalmente)
+                    
                       Column(
                         children: [
                           TextFormField(
@@ -169,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ],
                       ),
 
-                      // 3. ESPACIO INFERIOR (Mantiene el equilibrio visual)
+                      
                       const SizedBox(height: 20),
                     ],
                   ),

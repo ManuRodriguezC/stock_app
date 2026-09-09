@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'login_form.dart'; // Tu pantalla de Login
+import 'login_form.dart'; 
 
 void main() {
   runApp(const LoginScreen());
@@ -12,18 +12,18 @@ class LoginScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: WelcomePage(), // Mandamos a llamar al nuevo widget hijo
+      home: WelcomePage(), 
     );
   }
 }
 
-// Extraemos la vista a su propio StatelessWidget
+
 class WelcomePage extends StatelessWidget {
   const WelcomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Este 'context' ya está debajo de MaterialApp y SÍ tiene acceso al Navigator
+   
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 224, 234, 248),
       body: Padding(
