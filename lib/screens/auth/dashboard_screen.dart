@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:stock_app/repositories/product_repository.dart';
 
 import 'package:stock_app/screens/products/products_screen.dart';
 import 'package:stock_app/services/auth_service.dart';
 
 class DashboardScreen extends StatelessWidget {
   final AuthService authService;
+  final ProductRepository productRepository;
 
   const DashboardScreen({
     super.key,
     required this.authService,
+    required this.productRepository,
   });
 
   @override
@@ -30,7 +33,7 @@ class DashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: const ProductsScreen(),
+      body: ProductsScreen(productRepository: productRepository),
     );
   }
 }

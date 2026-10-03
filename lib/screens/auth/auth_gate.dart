@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:stock_app/repositories/product_repository.dart';
 import 'package:stock_app/screens/auth/dashboard_screen.dart';
 import 'package:stock_app/screens/welcome_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -9,10 +10,12 @@ import 'package:stock_app/services/auth_service.dart';
 
 class AuthGate extends StatefulWidget {
   final AuthService authService;
+  final ProductRepository productRepository;
 
   const AuthGate({
     super.key,
     required this.authService,
+    required this.productRepository,
   });
 
   @override
@@ -50,7 +53,10 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (_session != null) {
-      return DashboardScreen(authService: widget.authService);
+      return DashboardScreen(
+        authService: widget.authService,
+        productRepository: widget.productRepository
+      );
     }
     return WelcomePage(authService: widget.authService);
   }

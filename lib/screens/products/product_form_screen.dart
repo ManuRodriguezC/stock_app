@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stock_app/core/theme/app_colors.dart';
 import 'package:stock_app/models/product.dart';
+import 'package:stock_app/repositories/product_repository.dart';
 
 // =============================================================================
 // T10 - FORMULARIO DE PRODUCTO
@@ -15,15 +16,14 @@ import 'package:stock_app/models/product.dart';
 class ProductFormScreen extends StatefulWidget {
   // Producto que se va a editar. Si llega null, el formulario crea uno nuevo.
   final Product? initialProduct;
-
-  // Codigos de barras que ya existen, para no permitir repetidos.
   final List<String> existingBarcodes;
+  final ProductRepository productRepository;
 
-  const ProductFormScreen({
-    super.key,
-    this.initialProduct,
-    this.existingBarcodes = const [],
-  });
+  const ProductFormScreen(
+      {super.key,
+      this.initialProduct,
+      this.existingBarcodes = const [],
+      required this.productRepository});
 
   @override
   State<ProductFormScreen> createState() => _ProductFormScreenState();
@@ -43,7 +43,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   final _minimumStockController = TextEditingController();
 
   // Opciones de la lista desplegable de categorias.
-  final List<String> _categories = ['Bebidas', 'Snacks', 'Electrónica', 'General'];
+  final List<String> _categories = [
+    'Bebidas',
+    'Snacks',
+    'Electrónica',
+    'General'
+  ];
 
   String _selectedCategory = 'General';
   bool _isActive = true;
@@ -139,12 +144,9 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   // GUARDAR
   // ===========================================================================
 
-  void _guardar() {
-    // Cierra el teclado del celular.
+  Future<void> _guardar() async {
     FocusScope.of(context).unfocus();
 
-    // validate() ejecuta todas las validaciones de arriba.
-    // Devuelve false si alguna fallo.
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -152,31 +154,47 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           backgroundColor: AppColors.stockLow,
         ),
       );
+
       return;
     }
 
-    final ahora = DateTime.now();
-    final descripcion = _descriptionController.text.trim();
-
-    // Se arma el objeto Product con los datos del formulario.
     final producto = Product(
-      // Al editar se conserva el id original. Al crear se genera uno nuevo.
-      id: widget.initialProduct?.id ?? ahora.millisecondsSinceEpoch.toString(),
+      id: '',
       barcode: _barcodeController.text.trim(),
       name: _nameController.text.trim(),
-      description: descripcion.isEmpty ? null : descripcion,
+      description: _descriptionController.text.trim().isEmpty
+          ? null
+          : _descriptionController.text.trim(),
       category: _selectedCategory,
       unitPrice: double.parse(_priceController.text.trim()),
       stock: int.parse(_stockController.text.trim()),
       minimumStock: int.parse(_minimumStockController.text.trim()),
-      imageUrl: widget.initialProduct?.imageUrl,
+      imageUrl: null,
       isActive: _isActive,
-      createdAt: widget.initialProduct?.createdAt ?? ahora,
-      updatedAt: ahora,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
 
-    // pop cierra esta pantalla y le entrega el producto a la pantalla anterior.
-    Navigator.pop(context, producto);
+    try {
+      final productoGuardado =
+          await widget.productRepository.createProduct(producto);
+
+      if (!mounted) return;
+
+      Navigator.pop(context, productoGuardado);
+    } catch (e, stackTrace) {
+      debugPrint('ERROR CREANDO PRODUCTO: $e');
+      debugPrint('STACK TRACE: $stackTrace');
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al crear producto: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // ===========================================================================
@@ -339,7 +357,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           TextFormField(
             controller: controlador,
             validator: validador,
-            keyboardType: tecladoNumerico ? TextInputType.number : TextInputType.text,
+            keyboardType:
+                tecladoNumerico ? TextInputType.number : TextInputType.text,
             maxLines: lineas,
             style: const TextStyle(
               fontSize: 15,
@@ -348,11 +367,13 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
             ),
             decoration: InputDecoration(
               hintText: pista,
-              hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 14.5),
+              hintStyle:
+                  const TextStyle(color: AppColors.textMuted, fontSize: 14.5),
               prefixIcon: Icon(icono, size: 20, color: AppColors.textSecondary),
               filled: true,
               fillColor: AppColors.surface,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               border: _borde(AppColors.border),
               enabledBorder: _borde(AppColors.border),
               focusedBorder: _borde(AppColors.primary, grosor: 1.6),
@@ -401,7 +422,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
                   size: 20, color: AppColors.textSecondary),
               filled: true,
               fillColor: AppColors.surface,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               border: _borde(AppColors.border),
               enabledBorder: _borde(AppColors.border),
               focusedBorder: _borde(AppColors.primary, grosor: 1.6),
@@ -470,7 +492,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           backgroundColor: AppColors.primaryNavy,
           foregroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
         child: Text(
           _isEditing ? 'Guardar cambios' : 'Crear producto',

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:stock_app/repositories/product_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:stock_app/core/theme/app_theme.dart';
@@ -15,8 +16,10 @@ Future<void> main() async {
   final rawKey = dotenv.env['SUPABASE_KEY'] ?? '';
 
   // Si .env contiene los asteriscos del template o una URL inválida, usamos un fallback para pruebas locales
-  final supabaseUrl = rawUrl.startsWith('http') ? rawUrl : 'https://mock.supabase.co';
-  final supabaseKey = (rawKey != '*******' && rawKey.isNotEmpty) ? rawKey : 'mock-anon-key';
+  final supabaseUrl =
+      rawUrl.startsWith('http') ? rawUrl : 'https://mock.supabase.co';
+  final supabaseKey =
+      (rawKey != '*******' && rawKey.isNotEmpty) ? rawKey : 'mock-anon-key';
 
   await Supabase.initialize(
     url: supabaseUrl,
@@ -25,20 +28,24 @@ Future<void> main() async {
 
   final supabase = Supabase.instance.client;
   final authService = AuthService(supabase);
+  final productRepository = ProductRepository(supabase);
 
   runApp(
     MainApp(
       authService: authService,
+      productRepository: productRepository,
     ),
   );
 }
 
 class MainApp extends StatelessWidget {
   final AuthService authService;
+  final ProductRepository productRepository;
 
   const MainApp({
     super.key,
     required this.authService,
+    required this.productRepository,
   });
 
   @override
@@ -48,6 +55,7 @@ class MainApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       home: AuthGate(
         authService: authService,
+        productRepository: productRepository,
       ),
     );
   }

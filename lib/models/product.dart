@@ -26,4 +26,51 @@ class Product {
     required this.createdAt,
     required this.updatedAt,
   });
+
+  factory Product.fromMap(Map<String, dynamic> map) {
+    return Product(
+      id: map['id'].toString(),
+      barcode: map['barcode'],
+      name: map['name'],
+      description: map['description'],
+      category: map['category'],
+      unitPrice: (map['unit_price'] as num).toDouble(),
+      stock: map['stock'] as int,
+      minimumStock: map['minimum_stock'] as int,
+      imageUrl: map['image_url'],
+      isActive: map['is_active'] as bool,
+      createdAt: DateTime.parse(map['created_at']),
+      updatedAt: DateTime.parse(map['updated_at']),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'barcode': barcode,
+      'name': name,
+      'description': description,
+      'category': category,
+      'unit_price': unitPrice,
+      'stock': stock,
+      'minimum_stock': minimumStock,
+      'image_url': imageUrl,
+      'is_active': isActive,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
+    };
+  }
+
+  Map<String, dynamic> toInsertMap() {
+    return {
+      'barcode': barcode,
+      'name': name,
+      'description': description,
+      'category': category,
+      'unit_price': unitPrice,
+      'stock': stock,
+      'minimum_stock': minimumStock,
+      'image_url': imageUrl,
+      'is_active': isActive,
+    };
+  }
 }
