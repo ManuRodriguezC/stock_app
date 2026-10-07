@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:stock_app/core/theme/app_colors.dart';
 import 'package:stock_app/services/auth_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -39,9 +40,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       await widget.authService.signIn(
-        email: _emailController.text.trim(),
-        password: _passwordController.text
-      );
+          email: _emailController.text.trim(),
+          password: _passwordController.text);
       if (!mounted) return;
 
       Navigator.of(context).pop();
@@ -66,72 +66,112 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 224, 234, 248),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Iniciar Sesión', textAlign: TextAlign.center),
-        backgroundColor: const Color.fromARGB(255, 11, 49, 155),
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Iniciar sesión',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        backgroundColor: AppColors.background,
+        foregroundColor: AppColors.textPrimary,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
       ),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: 20.0,
-                ),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const Column(
-                        children: [
-                          Text.rich(
-                            TextSpan(
-                              style: TextStyle(
-                                fontSize: 50,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: "Stock",
-                                  style: TextStyle(
-                                    color: Color.fromARGB(255, 0, 0, 0),
-                                  ),
-                                ),
-                                TextSpan(
-                                  text: "Pro",
-                                  style: TextStyle(
-                                    color: Color.fromARGB(255, 11, 49, 155),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Text(
-                            "controla hoy el inventario de tu negocio",
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 28),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Column(
+                      children: [
+                        Text.rich(
+                          TextSpan(
                             style: TextStyle(
-                              fontSize: 25,
-                              color: Color.fromARGB(255, 98, 98, 98),
+                              fontSize: 44,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -1.5,
                             ),
-                            textAlign: TextAlign.center,
+                            children: [
+                              TextSpan(
+                                text: 'Stock',
+                                style: TextStyle(
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              TextSpan(
+                                text: 'Pro',
+                                style: TextStyle(
+                                  color: AppColors.primaryNavy,
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'Controla hoy el inventario de tu negocio',
+                          style: TextStyle(
+                            fontSize: 16,
+                            height: 1.5,
+                            color: AppColors.textSecondary,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+                    Container(
+                      padding: const EdgeInsets.all(22),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: AppColors.border),
                       ),
-                      Column(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          const Text(
+                            'Inicia sesión',
+                            style: TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Ingresa tus datos para continuar',
+                            style: TextStyle(
+                              color: AppColors.textSecondary,
+                              fontSize: 14,
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
                           TextFormField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             decoration: const InputDecoration(
-                              labelText: 'Correo Electrónico',
+                              labelText: 'Correo electrónico',
                               prefixIcon: Icon(Icons.email_outlined),
+                              contentPadding: EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 18,
+                              ),
                               border: OutlineInputBorder(),
                             ),
+                            style: const TextStyle(fontSize: 15),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Ingresa tu correo';
@@ -143,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 18),
                           TextFormField(
                             controller: _passwordController,
                             obscureText: _obscurePassword,
@@ -162,8 +202,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   });
                                 },
                               ),
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 18,
+                                vertical: 18,
+                              ),
                               border: const OutlineInputBorder(),
                             ),
+                            style: const TextStyle(fontSize: 15),
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Ingresa tu contraseña';
@@ -174,47 +219,53 @@ class _LoginScreenState extends State<LoginScreen> {
                               return null;
                             },
                           ),
-                          const SizedBox(height: 25),
+                          const SizedBox(height: 24),
                           if (_errorMessage != null)
                             Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.only(bottom: 18),
                               child: Text(
                                 _errorMessage!,
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
-                                  color: Colors.red,
+                                  color: AppColors.stockLow,
+                                  fontSize: 14,
                                 ),
                               ),
                             ),
-                          const SizedBox(height: 25),
                           ElevatedButton(
                             onPressed: _isLoading ? null : _singIn,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(
-                                255,
-                                11,
-                                49,
-                                155,
+                              backgroundColor: AppColors.primaryNavy,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(double.infinity, 56),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
                               ),
-                              minimumSize: const Size(double.infinity, 50),
-                            ),
-                            child: const Text(
-                              'Ingresar',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
+                              textStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    height: 22,
+                                    width: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Text('Ingresar'),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
