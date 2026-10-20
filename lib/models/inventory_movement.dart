@@ -1,6 +1,5 @@
 import 'package:stock_app/models/movement_type.dart';
 
-
 class InventoryMovement {
   final String id;
   final String productId;

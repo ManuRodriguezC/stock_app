@@ -15,8 +15,10 @@ Future<void> main() async {
   final rawKey = dotenv.env['SUPABASE_KEY'] ?? '';
 
   // Si .env contiene los asteriscos del template o una URL inválida, usamos un fallback para pruebas locales
-  final supabaseUrl = rawUrl.startsWith('http') ? rawUrl : 'https://mock.supabase.co';
-  final supabaseKey = (rawKey != '*******' && rawKey.isNotEmpty) ? rawKey : 'mock-anon-key';
+  final supabaseUrl =
+      rawUrl.startsWith('http') ? rawUrl : 'https://mock.supabase.co';
+  final supabaseKey =
+      (rawKey != '*******' && rawKey.isNotEmpty) ? rawKey : 'mock-anon-key';
 
   await Supabase.initialize(
     url: supabaseUrl,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stock_app/core/theme/app_colors.dart';
-import 'package:stock_app/models/product.dart';
+import 'package:stock_app/controllers/product_controller.dart';
 import 'package:stock_app/screens/products/widgets/product_card.dart';
 import 'package:stock_app/widgets/app_bottom_nav_bar.dart';
 
@@ -12,246 +12,137 @@ class ProductsScreen extends StatefulWidget {
 }
 
 class _ProductsScreenState extends State<ProductsScreen> {
-  // Pestaña seleccionada: 0 = Todos, 1 = Bajo stock, 2 = Sin stock
-  int _selectedTabIndex = 0;
-  
-  // Controlador para el campo de búsqueda
+  final ProductController _controller = ProductController();
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
 
-  // Array quemado de productos simulando datos iniciales (idéntico al mockup)
-  final List<Product> _mockProducts = [
-    Product(
-      id: '1',
-      name: 'Coca Cola 350ml',
-      barcode: '7501234567890',
-      category: 'Bebidas',
-      unitPrice: 3500.0,
-      stock: 27,
-      minimumStock: 10,
-      imageUrl: 'https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=150&auto=format&fit=crop&q=80',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    Product(
-      id: '2',
-      name: 'Agua Mineral 500ml',
-      barcode: '7501234567891',
-      category: 'Bebidas',
-      unitPrice: 2000.0,
-      stock: 13,
-      minimumStock: 10,
-      imageUrl: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?w=150&auto=format&fit=crop&q=80',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    Product(
-      id: '3',
-      name: 'Papas Lays 160g',
-      barcode: '7501234567892',
-      category: 'Snacks',
-      unitPrice: 4500.0,
-      stock: 5, // Bajo stock
-      minimumStock: 10,
-      imageUrl: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=150&auto=format&fit=crop&q=80',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    Product(
-      id: '4',
-      name: 'Teclado HP K120',
-      barcode: '7501234567893',
-      category: 'Electrónica',
-      unitPrice: 45000.0,
-      stock: 22,
-      minimumStock: 5,
-      imageUrl: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=150&auto=format&fit=crop&q=80',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    Product(
-      id: '5',
-      name: 'Mouse Logitech M185',
-      barcode: '7501234567894',
-      category: 'Electrónica',
-      unitPrice: 38000.0,
-      stock: 3, // Bajo stock
-      minimumStock: 5,
-      imageUrl: 'https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?w=150&auto=format&fit=crop&q=80',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-    Product(
-      id: '6',
-      name: 'Monitor Samsung 24"',
-      barcode: '7501234567895',
-      category: 'Electrónica',
-      unitPrice: 520000.0,
-      stock: 7,
-      minimumStock: 3,
-      imageUrl: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=150&auto=format&fit=crop&q=80',
-      isActive: true,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _controller.fetchProducts();
+    _searchController.addListener(() {
+      _controller.setSearchQuery(_searchController.text);
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _controller.dispose();
     super.dispose();
-  }
-
-  // Filtrado reactivo en memoria para búsqueda y pestañas
-  List<Product> get _filteredProducts {
-    return _mockProducts.where((product) {
-      // Filtro por pestaña
-      if (_selectedTabIndex == 1 && product.stock > product.minimumStock) {
-        return false;
-      }
-      if (_selectedTabIndex == 2 && product.stock > 0) {
-        return false;
-      }
-
-      // Filtro por búsqueda de texto
-      if (_searchQuery.isNotEmpty) {
-        final query = _searchQuery.toLowerCase();
-        final matchName = product.name.toLowerCase().contains(query);
-        final matchBarcode = (product.barcode ?? '').toLowerCase().contains(query);
-        final matchCategory = (product.category ?? '').toLowerCase().contains(query);
-        return matchName || matchBarcode || matchCategory;
-      }
-
-      return true;
-    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final products = _filteredProducts;
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
-        child: Column(
-          children: [
-            // 1. Encabezado superior (Título y botón + Agregar)
-            Padding(
-              padding: const EdgeInsets.only(left: 20, right: 20, top: 16, bottom: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  const Text(
-                    'Productos',
-                    style: TextStyle(
-                      fontSize: 27,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  _buildAddButton(),
-                ],
-              ),
-            ),
+        child: ListenableBuilder(
+          listenable: _controller,
+          builder: (context, _) {
+            final products = _controller.filteredProducts;
 
-            // 2. Barra de Búsqueda y Botón Filtro
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Container(
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: AppColors.surface,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border, width: 1),
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val;
-                          });
-                        },
-                        decoration: const InputDecoration(
-                          hintText: 'Buscar productos, código o categoría...',
-                          hintStyle: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 13.5,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.search_rounded,
-                            color: AppColors.textSecondary,
-                            size: 22,
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(vertical: 13),
+            return Column(
+              children: [
+                // 1. Encabezado superior (Título y botón + Agregar)
+                Padding(
+                  padding: const EdgeInsets.only(
+                      left: 20, right: 20, top: 16, bottom: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Text(
+                        'Productos',
+                        style: TextStyle(
+                          fontSize: 27,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.textPrimary,
+                          letterSpacing: -0.5,
                         ),
                       ),
-                    ),
+                      _buildAddButton(),
+                    ],
                   ),
-                  const SizedBox(width: 10),
-                  // Botón de filtros avanzados
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: AppColors.border, width: 1),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.tune_rounded,
-                        color: AppColors.textSecondary,
-                        size: 20,
+                ),
+
+                // 2. Barra de Búsqueda y Botón Filtro
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(12),
+                            border:
+                                Border.all(color: AppColors.border, width: 1),
+                          ),
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: const InputDecoration(
+                              hintText:
+                                  'Buscar productos, código o categoría...',
+                              hintStyle: TextStyle(
+                                color: AppColors.textMuted,
+                                fontSize: 13.5,
+                              ),
+                              prefixIcon: Icon(
+                                Icons.search_rounded,
+                                color: AppColors.textSecondary,
+                                size: 22,
+                              ),
+                              border: InputBorder.none,
+                              enabledBorder: InputBorder.none,
+                              focusedBorder: InputBorder.none,
+                              contentPadding:
+                                  EdgeInsets.symmetric(vertical: 13),
+                            ),
+                          ),
+                        ),
                       ),
-                      onPressed: () {
-                        // Modal visual futuro de filtros
-                      },
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 8),
-
-            // 3. Pestañas de estado (Todos, Bajo stock, Sin stock)
-            _buildTabsRow(),
-
-            const SizedBox(height: 10),
-
-            // 4. Lista de Productos o Estado Vacío
-            Expanded(
-              child: products.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.only(top: 4, bottom: 16),
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        final product = products[index];
-                        return ProductCard(
-                          product: product,
-                          onTap: () {
-                            // Navegación futura al detalle (T18)
+                      const SizedBox(width: 10),
+                      // Botón de filtros avanzados
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border, width: 1),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.tune_rounded,
+                            color: AppColors.textSecondary,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            // Modal visual futuro de filtros
                           },
-                        );
-                      },
-                    ),
-            ),
-          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // 3. Pestañas de estado (Todos, Bajo stock, Sin stock)
+                _buildTabsRow(),
+
+                const SizedBox(height: 10),
+
+                // 4. Lista de Productos o Estados (Carga, Error, Vacío)
+                Expanded(
+                  child: _buildMainContent(products),
+                ),
+              ],
+            );
+          },
         ),
       ),
       // 5. Barra de navegación inferior estandarizada
@@ -261,6 +152,36 @@ class _ProductsScreenState extends State<ProductsScreen> {
           // Navegación global futura (T20)
         },
       ),
+    );
+  }
+
+  Widget _buildMainContent(products) {
+    if (_controller.isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    if (_controller.errorMessage != null) {
+      return _buildErrorState();
+    }
+
+    if (products.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.only(top: 4, bottom: 16),
+      itemCount: products.length,
+      itemBuilder: (context, index) {
+        final product = products[index];
+        return ProductCard(
+          product: product,
+          onTap: () {
+            // Navegación futura al detalle (T18)
+          },
+        );
+      },
     );
   }
 
@@ -317,25 +238,26 @@ class _ProductsScreenState extends State<ProductsScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          _buildTabItem(title: 'Todos (152)', index: 0),
+          _buildTabItem(
+              title: 'Todos (${_controller.totalProductsCount})', index: 0),
           const SizedBox(width: 24),
-          _buildTabItem(title: 'Bajo stock (8)', index: 1),
+          _buildTabItem(
+              title: 'Bajo stock (${_controller.lowStockCount})', index: 1),
           const SizedBox(width: 24),
-          _buildTabItem(title: 'Sin stock (3)', index: 2),
+          _buildTabItem(
+              title: 'Sin stock (${_controller.outOfStockCount})', index: 2),
         ],
       ),
     );
   }
 
   Widget _buildTabItem({required String title, required int index}) {
-    final bool isSelected = _selectedTabIndex == index;
+    final bool isSelected = _controller.selectedTabIndex == index;
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
-        setState(() {
-          _selectedTabIndex = index;
-        });
+        _controller.setSelectedTab(index);
       },
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -361,6 +283,70 @@ class _ProductsScreenState extends State<ProductsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  size: 40,
+                  color: AppColors.error,
+                ),
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                '¡Ups! Algo salió mal',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _controller.errorMessage ?? 'Error desconocido',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  _controller.fetchProducts();
+                },
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Reintentar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

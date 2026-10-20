@@ -34,14 +34,16 @@ class ProductCard extends StatelessWidget {
         child: Image.network(
           product.imageUrl!,
           fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => _buildFallbackThumbnail(),
+          errorBuilder: (context, error, stackTrace) =>
+              _buildFallbackThumbnail(),
           loadingBuilder: (context, child, loadingProgress) {
             if (loadingProgress == null) return child;
             return const Center(
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.primary),
               ),
             );
           },
@@ -103,7 +105,8 @@ class ProductCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.7), width: 0.8),
+        border: Border.all(
+            color: AppColors.border.withValues(alpha: 0.7), width: 0.8),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -213,7 +216,9 @@ class ProductCard extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
-                            color: isLowStock ? AppColors.stockLow : AppColors.stockNormal,
+                            color: isLowStock
+                                ? AppColors.stockLow
+                                : AppColors.stockNormal,
                           ),
                         ),
                       ],

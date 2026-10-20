@@ -49,7 +49,7 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (_session != null) {
+    if (_session == null) {
       return const LoginScreen();
     }
 

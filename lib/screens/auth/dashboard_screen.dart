@@ -8,4 +8,4 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return const ProductsScreen();
   }
-}
+}
