@@ -44,9 +44,9 @@ class AppBottomNavBar extends StatelessWidget {
               ),
               _buildNavItem(
                 index: 2,
-                icon: Icons.crop_free_rounded,
-                activeIcon: Icons.crop_free_rounded,
-                label: 'Escanear',
+                icon: Icons.add_circle_outline_rounded,
+                activeIcon: Icons.add_circle_rounded,
+                label: 'Registrar',
               ),
               _buildNavItem(
                 index: 3,

@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:stock_app/models/product.dart';
 
 class ProductController extends ChangeNotifier {
+  static final ProductController _instance = ProductController._internal();
+  factory ProductController() => _instance;
+
+  ProductController._internal() {
+    _products = _getMockProducts();
+  }
+
   // --- Estado ---
   bool _isLoading = false;
   String? _errorMessage;
@@ -16,6 +23,7 @@ class ProductController extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   String get searchQuery => _searchQuery;
   int get selectedTabIndex => _selectedTabIndex;
+  List<Product> get allProducts => _products;
 
   // Getter para productos ya filtrados
   List<Product> get filteredProducts {
@@ -43,11 +51,17 @@ class ProductController extends ChangeNotifier {
     }).toList();
   }
 
-  // Contadores para las pestañas
+  // Contadores para las pestañas y métricas
   int get totalProductsCount => _products.length;
   int get lowStockCount =>
       _products.where((p) => p.stock > 0 && p.stock <= p.minimumStock).length;
   int get outOfStockCount => _products.where((p) => p.stock == 0).length;
+
+  double get totalInventoryValue =>
+      _products.fold(0.0, (sum, p) => sum + (p.unitPrice * p.stock));
+
+  List<Product> get lowStockProducts =>
+      _products.where((p) => p.stock <= p.minimumStock).toList();
 
   // --- Métodos públicos ---
 
@@ -57,17 +71,10 @@ class ProductController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // TODO: Reemplazar con llamada real al ProductService / ProductRepository cuando T08 esté lista.
-      // await Future.delayed(const Duration(seconds: 2)); // Simular retraso de red
-
-      // Simulando una posible falla (puedes descomentar para probar)
-      // if (DateTime.now().second % 2 == 0) {
-      //   throw Exception('Error simulado al cargar los productos');
-      // }
-
-      // Cargando datos falsos temporalmente
-      await Future.delayed(const Duration(milliseconds: 1500));
-      _products = _getMockProducts();
+      await Future.delayed(const Duration(milliseconds: 600));
+      if (_products.isEmpty) {
+        _products = _getMockProducts();
+      }
     } catch (e) {
       _errorMessage =
           'Ocurrió un error al cargar los productos. Por favor, intenta de nuevo.';
@@ -75,6 +82,11 @@ class ProductController extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void addProduct(Product product) {
+    _products.insert(0, product);
+    notifyListeners();
   }
 
   void setSearchQuery(String query) {

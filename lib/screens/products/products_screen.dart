@@ -2,10 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:stock_app/core/theme/app_colors.dart';
 import 'package:stock_app/controllers/product_controller.dart';
 import 'package:stock_app/screens/products/widgets/product_card.dart';
+import 'package:stock_app/screens/products/add_product_screen.dart';
 import 'package:stock_app/widgets/app_bottom_nav_bar.dart';
 
 class ProductsScreen extends StatefulWidget {
-  const ProductsScreen({super.key});
+  final ValueChanged<int>? onNavigateTab;
+  final bool showBottomBar;
+
+  const ProductsScreen({
+    super.key,
+    this.onNavigateTab,
+    this.showBottomBar = true,
+  });
 
   @override
   State<ProductsScreen> createState() => _ProductsScreenState();
@@ -27,7 +35,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-    _controller.dispose();
     super.dispose();
   }
 
@@ -146,12 +153,22 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ),
       ),
       // 5. Barra de navegación inferior estandarizada
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: 1, // 'Productos' activo
-        onTap: (index) {
-          // Navegación global futura (T20)
-        },
-      ),
+      bottomNavigationBar: widget.showBottomBar
+          ? AppBottomNavBar(
+              currentIndex: 1, // 'Productos' activo
+              onTap: (index) {
+                if (widget.onNavigateTab != null) {
+                  widget.onNavigateTab!(index);
+                } else if (index == 2) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const AddProductScreen()),
+                  );
+                }
+              },
+            )
+          : null,
     );
   }
 
@@ -196,7 +213,10 @@ class _ProductsScreenState extends State<ProductsScreen> {
         child: InkWell(
           borderRadius: BorderRadius.circular(10),
           onTap: () {
-            // Acción de crear producto (T10)
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const AddProductScreen()),
+            );
           },
           child: const Padding(
             padding: EdgeInsets.symmetric(horizontal: 14, vertical: 9),
