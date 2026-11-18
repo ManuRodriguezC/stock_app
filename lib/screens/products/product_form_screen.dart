@@ -1,20 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:stock_app/core/theme/app_colors.dart';
 import 'package:stock_app/models/product.dart';
 import 'package:stock_app/repositories/product_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-// =============================================================================
-// T10 - FORMULARIO DE PRODUCTO
-//
-// Pantalla para crear un producto nuevo o editar uno existente.
-// Cuando el usuario guarda, la pantalla se cierra y devuelve el producto
-// a la pantalla anterior (la lista de productos).
-// =============================================================================
 
-// StatefulWidget: se usa cuando la pantalla cambia mientras el usuario la usa.
-// Aqui cambia porque el usuario escribe, elige categoria y mueve el switch.
 class ProductFormScreen extends StatefulWidget {
-  // Producto que se va a editar. Si llega null, el formulario crea uno nuevo.
   final Product? initialProduct;
   final List<String> existingBarcodes;
   final ProductRepository productRepository;
@@ -30,11 +24,8 @@ class ProductFormScreen extends StatefulWidget {
 }
 
 class _ProductFormScreenState extends State<ProductFormScreen> {
-  // Llave del formulario. Sirve para pedirle a Flutter que valide
-  // todos los campos de una sola vez cuando se presiona Guardar.
   final _formKey = GlobalKey<FormState>();
 
-  // Un controlador por campo de texto. Guarda y lee lo que el usuario escribe.
   final _nameController = TextEditingController();
   final _barcodeController = TextEditingController();
   final _descriptionController = TextEditingController();
@@ -42,7 +33,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   final _stockController = TextEditingController();
   final _minimumStockController = TextEditingController();
 
-  // Opciones de la lista desplegable de categorias.
   final List<String> _categories = [
     'Bebidas',
     'Snacks',
@@ -54,14 +44,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   bool _isActive = true;
   bool _isEditing = false;
 
-  // initState se ejecuta una sola vez, cuando la pantalla se abre.
-  // Si llego un producto para editar, se llenan los campos con sus datos.
+  XFile? _selectedImage;
+  bool _isUploadingImage = false;
+  bool _imageRemoved = false;
+  Future<String>? _existingImageUrlFuture;
+
   @override
   void initState() {
     super.initState();
 
     final producto = widget.initialProduct;
-    if (producto == null) return; // Modo crear: los campos quedan vacios.
+    if (producto == null) return; 
 
     _isEditing = true;
     _nameController.text = producto.name;
@@ -75,10 +68,42 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     if (producto.category != null && _categories.contains(producto.category)) {
       _selectedCategory = producto.category!;
     }
+
+    final path = producto.imageUrl;
+    if (path != null && path.isNotEmpty) {
+      _existingImageUrlFuture =
+          widget.productRepository.getProductImageUrl(path);
+    }
   }
 
-  // dispose libera los controladores cuando la pantalla se cierra,
-  // para no dejar memoria ocupada.
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final image = await widget.productRepository.pickProductImage(source);
+      if (image == null) return; 
+
+      setState(() {
+        _selectedImage = image;
+        _imageRemoved = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo abrir la cámara/galería: $e'),
+          backgroundColor: AppColors.stockLow,
+        ),
+      );
+    }
+  }
+
+  void _removeImage() {
+    setState(() {
+      _selectedImage = null;
+      _imageRemoved = true;
+    });
+  }
+
+  
   @override
   void dispose() {
     _nameController.dispose();
@@ -158,6 +183,35 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       return;
     }
 
+    // Si hay foto nueva, se sube primero a Supabase Storage y se guarda la
+    // RUTA del objeto en image_url (el bucket es privado).
+    String? imagePath;
+    if (_selectedImage != null) {
+      setState(() => _isUploadingImage = true);
+      try {
+        final userId =
+            Supabase.instance.client.auth.currentUser?.id ?? 'anonymous';
+        imagePath = await widget.productRepository.uploadProductImage(
+          _selectedImage!,
+          userId,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al subir la imagen: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      } finally {
+        if (mounted) setState(() => _isUploadingImage = false);
+      }
+    } else if (!_imageRemoved) {
+      // Al editar sin cambiar la foto, se conserva la ruta anterior.
+      imagePath = widget.initialProduct?.imageUrl;
+    }
+
     final producto = Product(
       id: '',
       barcode: _barcodeController.text.trim(),
@@ -169,7 +223,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       unitPrice: double.parse(_priceController.text.trim()),
       stock: int.parse(_stockController.text.trim()),
       minimumStock: int.parse(_minimumStockController.text.trim()),
-      imageUrl: null,
+      imageUrl: imagePath,
       isActive: _isActive,
       createdAt: DateTime.now(),
       updatedAt: DateTime.now(),
@@ -185,6 +239,16 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     } catch (e, stackTrace) {
       debugPrint('ERROR CREANDO PRODUCTO: $e');
       debugPrint('STACK TRACE: $stackTrace');
+
+      // Si la imagen se subió pero el producto falló, se borra para no
+      // dejar archivos huérfanos en Storage.
+      if (_selectedImage != null && imagePath != null) {
+        try {
+          await widget.productRepository.deleteProductImage(imagePath);
+        } catch (deleteError) {
+          debugPrint('ERROR BORRANDO IMAGEN HUÉRFANA: $deleteError');
+        }
+      }
 
       if (!mounted) return;
 
@@ -233,6 +297,8 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             children: [
+              _seccionFoto(),
+              const SizedBox(height: 4),
               _titulo('Información general'),
 
               _campo(
@@ -309,6 +375,149 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
               _botonCancelar(),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  // ===========================================================================
+  // SECCIÓN DE FOTO
+  // ===========================================================================
+
+  Widget _seccionFoto() {
+    final existingPath = widget.initialProduct?.imageUrl;
+    final showExisting = _selectedImage == null &&
+        !_imageRemoved &&
+        existingPath != null &&
+        existingPath.isNotEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _titulo('Foto del producto'),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 96,
+                height: 96,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceMuted,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border, width: 1.2),
+                ),
+                child: _previewFoto(existingPath, showExisting),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _botonFoto(
+                      icono: Icons.photo_camera_outlined,
+                      etiqueta: 'Tomar foto',
+                      onPressed: _isUploadingImage
+                          ? null
+                          : () => _pickImage(ImageSource.camera),
+                    ),
+                    const SizedBox(height: 8),
+                    _botonFoto(
+                      icono: Icons.photo_library_outlined,
+                      etiqueta: 'Elegir de galería',
+                      onPressed: _isUploadingImage
+                          ? null
+                          : () => _pickImage(ImageSource.gallery),
+                    ),
+                    if (_selectedImage != null || showExisting) ...[
+                      const SizedBox(height: 2),
+                      TextButton.icon(
+                        onPressed: _isUploadingImage ? null : _removeImage,
+                        icon: const Icon(Icons.delete_outline, size: 16),
+                        label: const Text('Quitar foto'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.stockLow,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _previewFoto(String? existingPath, bool showExisting) {
+    final selected = _selectedImage;
+    if (selected != null) {
+      return Image.file(File(selected.path), fit: BoxFit.cover);
+    }
+
+    if (showExisting && _existingImageUrlFuture != null) {
+      return FutureBuilder<String>(
+        future: _existingImageUrlFuture,
+        builder: (context, snapshot) {
+          if (snapshot.hasData && !snapshot.hasError) {
+            return Image.network(
+              snapshot.data!,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _placeholderFoto(),
+            );
+          }
+          return _placeholderFoto(cargando: true);
+        },
+      );
+    }
+
+    return _placeholderFoto();
+  }
+
+  Widget _placeholderFoto({bool cargando = false}) {
+    if (cargando) {
+      return const Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+              strokeWidth: 2, color: AppColors.primary),
+        ),
+      );
+    }
+    return const Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(Icons.add_a_photo_outlined, size: 26, color: AppColors.textMuted),
+        SizedBox(height: 4),
+        Text('Sin foto',
+            style: TextStyle(fontSize: 11, color: AppColors.textMuted)),
+      ],
+    );
+  }
+
+  Widget _botonFoto({
+    required IconData icono,
+    required String etiqueta,
+    required VoidCallback? onPressed,
+  }) {
+    return SizedBox(
+      height: 38,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon: Icon(icono, size: 17),
+        label: Text(etiqueta,
+            style:
+                const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: AppColors.primary,
+          side: const BorderSide(color: AppColors.border, width: 1.2),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
         ),
       ),
     );
@@ -487,7 +696,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     return SizedBox(
       height: 52,
       child: ElevatedButton(
-        onPressed: _guardar,
+        onPressed: _isUploadingImage ? null : _guardar,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primaryNavy,
           foregroundColor: Colors.white,
@@ -495,10 +704,27 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
-        child: Text(
-          _isEditing ? 'Guardar cambios' : 'Crear producto',
-          style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
-        ),
+        child: _isUploadingImage
+            ? const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.white),
+                  ),
+                  SizedBox(width: 10),
+                  Text('Subiendo imagen...',
+                      style:
+                          TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ],
+              )
+            : Text(
+                _isEditing ? 'Guardar cambios' : 'Crear producto',
+                style: const TextStyle(
+                    fontSize: 15.5, fontWeight: FontWeight.w700),
+              ),
       ),
     );
   }

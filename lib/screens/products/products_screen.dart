@@ -19,14 +19,11 @@ class ProductsScreen extends StatefulWidget {
 }
 
 class _ProductsScreenState extends State<ProductsScreen> {
-  // Pestaña seleccionada: 0 = Todos, 1 = Bajo stock, 2 = Sin stock
   int _selectedTabIndex = 0;
 
-  // Controlador para el campo de búsqueda
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
-  // Array quemado de productos simulando datos iniciales (idéntico al mockup)
   List<Product> _products = [];
   List<Product> _allproducts = [];
   bool _isLoading = false;
@@ -73,10 +70,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
     }
   }
 
-  // Filtrado reactivo en memoria para búsqueda y pestañas
   List<Product> get _filteredProducts {
     return _products.where((product) {
-      // Filtro por pestaña
       if (_selectedTabIndex == 1 &&
           !(product.stock > 0 && product.stock <= product.minimumStock)) {
         return false;
@@ -85,7 +80,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
         return false;
       }
 
-      // Filtro por búsqueda de texto
       if (_searchQuery.isNotEmpty) {
         final query = _searchQuery.toLowerCase();
         final matchName = product.name.toLowerCase().contains(query);
@@ -110,7 +104,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
         bottom: false,
         child: Column(
           children: [
-            // 1. Encabezado superior (Título y botón + Agregar)
             Padding(
               padding: const EdgeInsets.only(
                   left: 20, right: 20, top: 16, bottom: 12),
@@ -135,7 +128,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
               ),
             ),
 
-            // 2. Barra de Búsqueda y Botón Filtro
             ProductSearchBar(
               controller: _searchController,
               onChanged: (value) {
@@ -144,13 +136,11 @@ class _ProductsScreenState extends State<ProductsScreen> {
                 });
               },
               onFilterPressed: () {
-                // Modal visual futuro de filtros
               },
             ),
 
             const SizedBox(height: 8),
 
-            // 3. Pestañas de estado (Todos, Bajo stock, Sin stock)
             ProductTabs(
                 products: _allproducts,
                 selectedTabIndex: _selectedTabIndex,
@@ -162,7 +152,6 @@ class _ProductsScreenState extends State<ProductsScreen> {
 
             const SizedBox(height: 10),
 
-            // 4. Lista de Productos o Estado Vacío
             Expanded(
               child: products.isEmpty
                   ? ProductListEmpty()
@@ -173,8 +162,8 @@ class _ProductsScreenState extends State<ProductsScreen> {
                         final product = products[index];
                         return ProductCard(
                           product: product,
+                          productRepository: widget.productRepository,
                           onTap: () {
-                            // Navegación futura al detalle (T18)
                           },
                         );
                       },
@@ -183,11 +172,9 @@ class _ProductsScreenState extends State<ProductsScreen> {
           ],
         ),
       ),
-      // 5. Barra de navegación inferior estandarizada
       bottomNavigationBar: AppBottomNavBar(
-        currentIndex: 1, // 'Productos' activo
+        currentIndex: 1, 
         onTap: (index) {
-          // Navegación global futura (T20)
         },
       ),
     );

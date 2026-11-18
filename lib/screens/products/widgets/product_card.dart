@@ -1,16 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:stock_app/core/theme/app_colors.dart';
 import 'package:stock_app/models/product.dart';
+import 'package:stock_app/repositories/product_repository.dart';
 
-class ProductCard extends StatelessWidget {
+class ProductCard extends StatefulWidget {
   final Product product;
   final VoidCallback? onTap;
+  final ProductRepository productRepository;
 
   const ProductCard({
     super.key,
     required this.product,
+    required this.productRepository,
     this.onTap,
   });
+
+  @override
+  State<ProductCard> createState() => _ProductCardState();
+}
+
+class _ProductCardState extends State<ProductCard> {
+  // La URL firmada se calcula una sola vez por imagen (no en cada rebuild).
+  Future<String>? _imageUrlFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _prepareImageFuture();
+  }
+
+  @override
+  void didUpdateWidget(ProductCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.product.imageUrl != widget.product.imageUrl) {
+      _prepareImageFuture();
+    }
+  }
+
+  void _prepareImageFuture() {
+    final path = widget.product.imageUrl;
+    _imageUrlFuture = (path == null || path.isEmpty)
+        ? null
+        : widget.productRepository.getProductImageUrl(path);
+  }
 
   Color _getCategoryColor(String? category) {
     if (category == null) return AppColors.categoryGeneral;
@@ -28,27 +60,47 @@ class ProductCard extends StatelessWidget {
   }
 
   Widget _buildThumbnail() {
-    if (product.imageUrl != null && product.imageUrl!.isNotEmpty) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(12),
-        child: Image.network(
-          product.imageUrl!,
-          fit: BoxFit.contain,
-          errorBuilder: (context, error, stackTrace) => _buildFallbackThumbnail(),
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
+    final future = _imageUrlFuture;
+    if (future == null) return _buildFallbackThumbnail();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: FutureBuilder<String>(
+        future: future,
+        builder: (context, snapshot) {
+          if (snapshot.hasError) return _buildFallbackThumbnail();
+          if (snapshot.connectionState == ConnectionState.waiting ||
+              !snapshot.hasData) {
             return const Center(
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: AppColors.primary),
               ),
             );
-          },
-        ),
-      );
-    }
-    return _buildFallbackThumbnail();
+          }
+
+          return Image.network(
+            snapshot.data!,
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                _buildFallbackThumbnail(),
+            loadingBuilder: (context, child, loadingProgress) {
+              if (loadingProgress == null) return child;
+              return const Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: AppColors.primary),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
   }
 
   Widget _buildFallbackThumbnail() {
@@ -56,7 +108,7 @@ class ProductCard extends StatelessWidget {
     IconData iconData = Icons.inventory_2_outlined;
     Color iconColor = AppColors.textSecondary;
 
-    final lowerName = product.name.toLowerCase();
+    final lowerName = widget.product.name.toLowerCase();
     if (lowerName.contains('coca') || lowerName.contains('soda')) {
       iconData = Icons.local_drink_rounded;
       iconColor = AppColors.categoryBebidas;
@@ -95,15 +147,16 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Alerta de bajo stock: rojo si stock <= stock mínimo configurado
-    final bool isLowStock = product.stock <= product.minimumStock;
-    final categoryColor = _getCategoryColor(product.category);
+    final bool isLowStock = widget.product.stock <= widget.product.minimumStock;
+    final categoryColor = _getCategoryColor(widget.product.category);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border.withValues(alpha: 0.7), width: 0.8),
+        border: Border.all(
+            color: AppColors.border.withValues(alpha: 0.7), width: 0.8),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -116,7 +169,7 @@ class ProductCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: onTap,
+          onTap: widget.onTap,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: Row(
@@ -142,7 +195,7 @@ class ProductCard extends StatelessWidget {
                     children: [
                       // Nombre
                       Text(
-                        product.name,
+                        widget.product.name,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
@@ -156,7 +209,7 @@ class ProductCard extends StatelessWidget {
 
                       // Código de barras
                       Text(
-                        product.barcode ?? 'Sin código',
+                        widget.product.barcode ?? 'Sin código',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w400,
@@ -178,7 +231,7 @@ class ProductCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            product.category ?? 'General',
+                            widget.product.category ?? 'General',
                             style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w500,
@@ -209,11 +262,13 @@ class ProductCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 1),
                         Text(
-                          '${product.stock}',
+                          '${widget.product.stock}',
                           style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
-                            color: isLowStock ? AppColors.stockLow : AppColors.stockNormal,
+                            color: isLowStock
+                                ? AppColors.stockLow
+                                : AppColors.stockNormal,
                           ),
                         ),
                       ],

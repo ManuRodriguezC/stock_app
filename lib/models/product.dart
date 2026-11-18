@@ -7,6 +7,10 @@ class Product {
   final double unitPrice;
   final int stock;
   final int minimumStock;
+
+  /// Con el bucket privado, guarda la RUTA del objeto en Storage
+  /// (por ejemplo `products/<uid>/123.jpg`), no una URL pública.
+  /// Para mostrarla se genera una URL firmada con ImageStorageService.
   final String? imageUrl;
   final bool isActive;
   final DateTime createdAt;
