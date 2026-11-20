@@ -7,7 +7,6 @@ import 'package:stock_app/models/product.dart';
 import 'package:stock_app/repositories/product_repository.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-
 class ProductFormScreen extends StatefulWidget {
   final Product? initialProduct;
   final List<String> existingBarcodes;
@@ -43,18 +42,19 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   String _selectedCategory = 'General';
   bool _isActive = true;
   bool _isEditing = false;
+  bool _isSaving = false;
 
   XFile? _selectedImage;
   bool _isUploadingImage = false;
   bool _imageRemoved = false;
-  Future<String>? _existingImageUrlFuture;
+  String? _existingImageUrlFuture;
 
   @override
   void initState() {
     super.initState();
 
     final producto = widget.initialProduct;
-    if (producto == null) return; 
+    if (producto == null) return;
 
     _isEditing = true;
     _nameController.text = producto.name;
@@ -79,7 +79,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   Future<void> _pickImage(ImageSource source) async {
     try {
       final image = await widget.productRepository.pickProductImage(source);
-      if (image == null) return; 
+      if (image == null) return;
 
       setState(() {
         _selectedImage = image;
@@ -103,7 +103,6 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     });
   }
 
-  
   @override
   void dispose() {
     _nameController.dispose();
@@ -172,6 +171,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
   Future<void> _guardar() async {
     FocusScope.of(context).unfocus();
 
+    if (_isSaving) return;
+
+    setState(() {
+      _isSaving = true;
+    });
+
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -186,11 +191,17 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     // Si hay foto nueva, se sube primero a Supabase Storage y se guarda la
     // RUTA del objeto en image_url (el bucket es privado).
     String? imagePath;
+    final oldImagePath = widget.initialProduct?.imageUrl;
+
     if (_selectedImage != null) {
       setState(() => _isUploadingImage = true);
       try {
-        final userId =
-            Supabase.instance.client.auth.currentUser?.id ?? 'anonymous';
+        final userId = Supabase.instance.client.auth.currentUser?.id;
+
+        if (userId == null) {
+          throw Exception('No hay un usuario autenticado');
+        }
+
         imagePath = await widget.productRepository.uploadProductImage(
           _selectedImage!,
           userId,
@@ -205,7 +216,12 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
         );
         return;
       } finally {
-        if (mounted) setState(() => _isUploadingImage = false);
+        if (mounted) {
+          setState(() {
+            _isUploadingImage = false;
+            _isSaving = false;
+          });
+        }
       }
     } else if (!_imageRemoved) {
       // Al editar sin cambiar la foto, se conserva la ruta anterior.
@@ -213,7 +229,7 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
     }
 
     final producto = Product(
-      id: '',
+      id: widget.initialProduct?.id ?? '',
       barcode: _barcodeController.text.trim(),
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim().isEmpty
@@ -225,13 +241,32 @@ class _ProductFormScreenState extends State<ProductFormScreen> {
       minimumStock: int.parse(_minimumStockController.text.trim()),
       imageUrl: imagePath,
       isActive: _isActive,
-      createdAt: DateTime.now(),
+      createdAt: widget.initialProduct?.createdAt ?? DateTime.now(),
       updatedAt: DateTime.now(),
     );
 
     try {
-      final productoGuardado =
-          await widget.productRepository.createProduct(producto);
+      Product productoGuardado;
+
+      if (_isEditing) {
+        productoGuardado =
+            await widget.productRepository.updateProduct(producto);
+      } else {
+        productoGuardado =
+            await widget.productRepository.createProduct(producto);
+      }
+
+      // Si se cambió o eliminó la imagen, borramos la anterior de Storage.
+      if (_isEditing &&
+          oldImagePath != null &&
+          oldImagePath.isNotEmpty &&
+          oldImagePath != imagePath) {
+        try {
+          await widget.productRepository.deleteProductImage(oldImagePath);
+        } catch (deleteError) {
+          debugPrint('No se pudo eliminar la imagen anterior: $deleteError');
+        }
+      }
 
       if (!mounted) return;
 

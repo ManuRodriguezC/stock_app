@@ -21,7 +21,7 @@ class ProductCard extends StatefulWidget {
 
 class _ProductCardState extends State<ProductCard> {
   // La URL firmada se calcula una sola vez por imagen (no en cada rebuild).
-  Future<String>? _imageUrlFuture;
+  String? _imageUrlFuture;
 
   @override
   void initState() {

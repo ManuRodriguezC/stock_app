@@ -25,6 +25,28 @@ class ProductRepository {
     return Product.fromMap(response);
   }
 
+  Future<Product> updateProduct(Product product) async {
+    final response = await _supabase
+        .from('products')
+        .update({
+          'barcode': product.barcode,
+          'name': product.name,
+          'description': product.description,
+          'category': product.category,
+          'unit_price': product.unitPrice,
+          'stock': product.stock,
+          'minimum_stock': product.minimumStock,
+          'image_url': product.imageUrl,
+          'is_active': product.isActive,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', product.id)
+        .select()
+        .single();
+
+    return Product.fromMap(response);
+  }
+
   Future<List<Product>> getProducts() async {
     final response = await _supabase.from('products').select();
 
@@ -45,9 +67,8 @@ class ProductRepository {
     return imageStorage.uploadProductImage(image, userId: userId);
   }
 
-  /// Devuelve una URL firmada temporal para mostrar la imagen.
-  Future<String> getProductImageUrl(String path) {
-    return imageStorage.getSignedUrl(path);
+  String getProductImageUrl(String path) {
+    return imageStorage.getPublicUrl(path);
   }
 
   /// Borra la foto del bucket.

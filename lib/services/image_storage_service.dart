@@ -6,8 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class ImageStorageService {
   static const String bucket = 'product-images';
 
-  static const int signedUrlDuration = 3600;
-
   final SupabaseClient _supabase;
 
   ImageStorageService(this._supabase);
@@ -41,10 +39,10 @@ class ImageStorageService {
     return path;
   }
 
-  Future<String> getSignedUrl(String path) {
+  String getPublicUrl(String path) {
     return _supabase.storage
         .from(bucket)
-        .createSignedUrl(path, signedUrlDuration);
+        .getPublicUrl(path);
   }
 
   Future<void> deleteProductImage(String path) {
