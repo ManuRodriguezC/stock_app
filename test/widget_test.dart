@@ -12,6 +12,7 @@ void main() {
         home: const MainShellScreen(),
       ),
     );
+    await tester.pumpAndSettle();
 
     expect(find.text('StockApp'), findsWidgets);
     expect(find.text('Panel Principal'), findsOneWidget);

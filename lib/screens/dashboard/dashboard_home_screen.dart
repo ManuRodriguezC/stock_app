@@ -1,14 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:stock_app/core/theme/app_colors.dart';
 import 'package:stock_app/controllers/product_controller.dart';
+import 'package:stock_app/repositories/product_repository.dart';
 import 'package:stock_app/screens/products/add_product_screen.dart';
+import 'package:stock_app/services/auth_service.dart';
 
 class DashboardHomeScreen extends StatelessWidget {
   final ValueChanged<int>? onNavigateTab;
+  final AuthService? authService;
+  final ProductRepository? productRepository;
 
   const DashboardHomeScreen({
     super.key,
     this.onNavigateTab,
+    this.authService,
+    this.productRepository,
   });
 
   @override
@@ -56,18 +62,44 @@ class DashboardHomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: AppColors.border, width: 1),
-                        ),
-                        child: const Icon(
-                          Icons.notifications_none_rounded,
-                          color: AppColors.textPrimary,
-                          size: 22,
-                        ),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (authService != null) ...[
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.border, width: 1),
+                              ),
+                              child: IconButton(
+                                tooltip: 'Cerrar sesión',
+                                icon: const Icon(
+                                  Icons.logout_rounded,
+                                  color: AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                                onPressed: () async {
+                                  await authService!.signOut();
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.border, width: 1),
+                            ),
+                            child: const Icon(
+                              Icons.notifications_none_rounded,
+                              color: AppColors.textPrimary,
+                              size: 22,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

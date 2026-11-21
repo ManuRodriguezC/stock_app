@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:stock_app/repositories/product_repository.dart';
 import 'package:stock_app/screens/dashboard/dashboard_home_screen.dart';
 import 'package:stock_app/screens/products/products_screen.dart';
+import 'package:stock_app/screens/products/product_form_screen.dart';
 import 'package:stock_app/screens/products/add_product_screen.dart';
 import 'package:stock_app/screens/movements/movements_screen.dart';
+import 'package:stock_app/services/auth_service.dart';
 import 'package:stock_app/widgets/app_bottom_nav_bar.dart';
 
 class MainShellScreen extends StatefulWidget {
   final int initialIndex;
+  final AuthService? authService;
+  final ProductRepository? productRepository;
 
   const MainShellScreen({
     super.key,
     this.initialIndex = 0,
+    this.authService,
+    this.productRepository,
   });
 
   @override
@@ -36,13 +43,18 @@ class _MainShellScreenState extends State<MainShellScreen> {
   Widget build(BuildContext context) {
     final List<Widget> pages = [
       DashboardHomeScreen(
+        authService: widget.authService,
+        productRepository: widget.productRepository,
         onNavigateTab: (index) => _onTabTapped(index),
       ),
       ProductsScreen(
+        productRepository: widget.productRepository,
         showBottomBar: false,
         onNavigateTab: (index) => _onTabTapped(index),
       ),
-      const AddProductScreen(),
+      widget.productRepository != null
+          ? ProductFormScreen(productRepository: widget.productRepository!)
+          : const AddProductScreen(),
       const MovementsScreen(),
     ];
 
